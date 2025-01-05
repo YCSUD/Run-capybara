@@ -17,6 +17,7 @@ let obstacles = [];
 let fruits = [];
 let score = 0;
 let gameSpeed = 3;
+let isPaused = false; // New variable to track pause state
 
 // Track pressed keys
 let keys = {};
@@ -24,6 +25,9 @@ let keys = {};
 // Event listeners for key presses
 window.addEventListener('keydown', (e) => {
     keys[e.code] = true;
+    if (e.code === 'Space') {
+        isPaused = !isPaused; // Toggle pause state on Space key press
+    }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -32,14 +36,18 @@ window.addEventListener('keyup', (e) => {
 
 // Generate random obstacles and fruits
 function generateObstacles() {
-    const width = Math.random() * (canvas.width / 3);
-    const x = Math.random() * (canvas.width - width);
-    obstacles.push({ x, y: -50, width, height: 20 });
+    if (!isPaused) {
+        const width = Math.random() * (canvas.width / 3);
+        const x = Math.random() * (canvas.width - width);
+        obstacles.push({ x, y: -50, width, height: 20 });
+    }
 }
 
 function generateFruits() {
-    const x = Math.random() * (canvas.width - 20);
-    fruits.push({ x, y: -20, width: 20, height: 20 });
+    if (!isPaused) {
+        const x = Math.random() * (canvas.width - 20);
+        fruits.push({ x, y: -20, width: 20, height: 20 });
+    }
 }
 
 // Draw capybara
@@ -146,12 +154,14 @@ function update() {
 
 // Main game loop
 function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawCapybara();
-    drawObstacles();
-    drawFruits();
-    drawScore();
-    update();
+    if (!isPaused) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawCapybara();
+        drawObstacles();
+        drawFruits();
+        drawScore();
+        update();
+    }
     requestAnimationFrame(gameLoop);
 }
 
