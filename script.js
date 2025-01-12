@@ -3,6 +3,21 @@ const ctx = canvas.getContext('2d');
 
 let speedCapybar = 5
 
+document.getElementById('leftButton').addEventListener('click', () => {
+    keys['ArrowLeft'] = true;
+    setTimeout(() => keys['ArrowLeft'] = false, 100); // Отпустить кнопку после небольшого задержки
+});
+
+document.getElementById('pauseButton').addEventListener('click', () => {
+    isPaused = !isPaused;
+});
+
+document.getElementById('rightButton').addEventListener('click', () => {
+    keys['ArrowRight'] = true;
+    setTimeout(() => keys['ArrowRight'] = false, 100); // Отпустить кнопку после небольшого задержки
+});
+
+
 // Capybara properties
 const capybara = {
     x: canvas.width / 2 - 25,

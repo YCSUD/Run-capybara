@@ -11,3 +11,30 @@ canvas {
     background-color: #32cd32;
     border: 2px solid #000;
 }
+
+#mobileControls {
+    display: none; /* Скрыть по умолчанию */
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+}
+
+#mobileControls button {
+    display: inline-block;
+    margin: 0 10px;
+    padding: 15px;
+    font-size: 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #ccc;
+    cursor: pointer;
+}
+
+/* Показать кнопки на мобильных устройствах */
+@media (max-width: 600px) {
+    #mobileControls {
+        display: block;
+    }
+}
+
