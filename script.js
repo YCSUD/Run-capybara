@@ -1,187 +1,356 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const highScoreElement = document.getElementById('highScore');
 
-let speedCapybar = 5
+    // Загрузка лучшего счета из localStorage
+    let highScore = localStorage.getItem('highScore') || 0;
+    highScoreElement.textContent = highScore;
 
-document.getElementById('leftButton').addEventListener('click', () => {
-    keys['ArrowLeft'] = true;
-    setTimeout(() => keys['ArrowLeft'] = false, 100); // Отпустить кнопку после небольшого задержки
-});
+    // Начальные значения скорости
+    let initialSpeedCapybar = 5;
+    let initialGameSpeed = 3;
 
-document.getElementById('pauseButton').addEventListener('click', () => {
-    isPaused = !isPaused;
-});
+    let speedCapybar = initialSpeedCapybar; // Обычная скорость капибары
+    let fastSpeed = 10; // Увеличенная скорость при нажатии кнопок
+    let gameSpeed = initialGameSpeed; // Скорость игры
 
-document.getElementById('rightButton').addEventListener('click', () => {
-    keys['ArrowRight'] = true;
-    setTimeout(() => keys['ArrowRight'] = false, 100); // Отпустить кнопку после небольшого задержки
-});
+    // Capybara properties
+    const capybara = {
+        x: canvas.width / 2 - 25,
+        y: canvas.height - 70,
+        width: 50,
+        height: 50,
+        speed: speedCapybar
+    };
 
+    // Obstacles and fruits arrays
+    let obstacles = [];
+    let fruits = [];
+    let score = 0;
+    let isPaused = false;
+    let isGameRunning = false;
 
-// Capybara properties
-const capybara = {
-    x: canvas.width / 2 - 25,
-    y: canvas.height - 70,
-    width: 50,
-    height: 50,
-    speed: speedCapybar
-};
+    // Track pressed keys
+    let keys = {};
+    let isMovingLeft = false;
+    let isMovingRight = false;
 
-// Obstacles and fruits arrays
-let obstacles = [];
-let fruits = [];
-let score = 0;
-let gameSpeed = 3;
-let isPaused = false; // New variable to track pause state
+    // Флаг для обратного управления
+    let isReversedControls = false;
 
-// Track pressed keys
-let keys = {};
+    // Флаг для режима испытаний
+    let isChallengeMode = false;
 
-// Event listeners for key presses
-window.addEventListener('keydown', (e) => {
-    keys[e.code] = true;
-    if (e.code === 'Space') {
-        isPaused = !isPaused; // Toggle pause state on Space key press
+    // Интервалы для генерации препятствий и фруктов
+    let obstacleInterval;
+    let fruitInterval;
+
+    // Функция для запуска обычного интервала
+    function startNormalObstacleGeneration() {
+        if (obstacleInterval) {
+            clearInterval(obstacleInterval);
+        }
+        obstacleInterval = setInterval(() => {
+            if (!isPaused && isGameRunning) {
+                generateObstacles();
+            }
+        }, 2000);
     }
-});
 
-window.addEventListener('keyup', (e) => {
-    keys[e.code] = false;
-});
-
-// Generate random obstacles and fruits
-function generateObstacles() {
-    if (!isPaused) {
-        const width = Math.random() * (canvas.width / 3);
-        const x = Math.random() * (canvas.width - width);
-        obstacles.push({ x, y: -50, width, height: 20 });
+    // Generate random obstacles
+    function generateObstacles() {
+        if (obstacles.length < 10) {
+            const width = Math.random() * (canvas.width / 3);
+            const x = Math.random() * (canvas.width - width);
+            obstacles.push({ x, y: -50, width, height: 20 });
+        }
     }
-}
 
-function generateFruits() {
-    if (!isPaused) {
+    // Generate random fruits
+    function generateFruits() {
         const x = Math.random() * (canvas.width - 20);
         fruits.push({ x, y: -20, width: 20, height: 20 });
     }
-}
 
-// Draw capybara
-function drawCapybara() {
-    ctx.fillStyle = 'brown';
-    ctx.fillRect(capybara.x, capybara.y, capybara.width, capybara.height);
-}
+    // Draw capybara
+    function drawCapybara() {
+        ctx.fillStyle = 'brown';
+        ctx.fillRect(capybara.x, capybara.y, capybara.width, capybara.height);
+    }
 
-// Draw obstacles and fruits
-function drawObstacles() {
-    ctx.fillStyle = 'red';
-    obstacles.forEach(obstacle => {
-        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-    });
-}
+    // Draw obstacles and fruits
+    function drawObstacles() {
+        ctx.fillStyle = 'red';
+        obstacles.forEach(obstacle => {
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        });
+    }
 
-function drawFruits() {
-    ctx.fillStyle = 'orange';
-    fruits.forEach(fruit => {
-        ctx.fillRect(fruit.x, fruit.y, fruit.width, fruit.height);
-    });
-}
+    function drawFruits() {
+        ctx.fillStyle = 'orange';
+        fruits.forEach(fruit => {
+            ctx.fillRect(fruit.x, fruit.y, fruit.width, fruit.height);
+        });
+    }
 
-// Update positions of obstacles and fruits
-function updateObstacles() {
-    obstacles.forEach(obstacle => {
-        obstacle.y += gameSpeed;
-    });
-    obstacles = obstacles.filter(obstacle => obstacle.y < canvas.height);
-}
+    // Update positions of obstacles and fruits
+    function updateObstacles() {
+        obstacles.forEach(obstacle => {
+            obstacle.y += gameSpeed;
+        });
+        obstacles = obstacles.filter(obstacle => obstacle.y < canvas.height);
+    }
 
-function updateFruits() {
-    fruits.forEach(fruit => {
-        fruit.y += gameSpeed;
-    });
-    fruits = fruits.filter(fruit => fruit.y < canvas.height);
-}
+    function updateFruits() {
+        fruits.forEach(fruit => {
+            fruit.y += gameSpeed;
+        });
+        fruits = fruits.filter(fruit => fruit.y < canvas.height);
+    }
 
-// Check for collisions
-function checkCollisions() {
-    obstacles.forEach(obstacle => {
-        if (capybara.x < obstacle.x + obstacle.width &&
-            capybara.x + capybara.width > obstacle.x &&
-            capybara.y < obstacle.y + obstacle.height &&
-            capybara.height + capybara.y > obstacle.y) {
-            // Game over
-            // alert(`Game Over! Your score: ${score}`);
-            document.location.reload();
+    // Check for collisions
+    function checkCollisions() {
+        obstacles.forEach(obstacle => {
+            if (capybara.x < obstacle.x + obstacle.width &&
+                capybara.x + capybara.width > obstacle.x &&
+                capybara.y < obstacle.y + obstacle.height &&
+                capybara.height + capybara.y > obstacle.y) {
+                saveScore(); // Сохраняем счет перед сбросом игры
+                resetGame();
+                hideMainMenu();
+            }
+        });
+
+        fruits.forEach((fruit, index) => {
+            if (capybara.x < fruit.x + fruit.width &&
+                capybara.x + capybara.width > fruit.x &&
+                capybara.y < fruit.y + fruit.height &&
+                capybara.height + capybara.y > fruit.y) {
+                score += 10;
+                fruits.splice(index, 1);
+            }
+        });
+    }
+
+    // Display score
+    function drawScore() {
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.fillText(`Score: ${score}`, 10, 30);
+    }
+
+    // Функция для сохранения счета
+    function saveScore() {
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('highScore', highScore); // Сохраняем лучший результат
+            highScoreElement.textContent = highScore; // Обновляем отображение
+        }
+    }
+
+    // Функция для активации обратного управления
+    function activateReverseControls() {
+        isReversedControls = true; // Включаем обратное управление
+        setTimeout(() => {
+            isReversedControls = false; // Отключаем через 15 секунд
+        }, 15000); // 15 секунд
+    }
+
+    // Increase game speed and activate reverse controls at 100 points
+    function increaseSpeed() {
+        if (score === 100 && isChallengeMode) {
+            activateReverseControls(); // Активируем обратное управление
+        }
+    }
+
+    // Start the game in normal mode
+    document.getElementById('normalModeBtn').addEventListener('click', () => {
+        if (!isGameRunning) {
+            isChallengeMode = false; // Обычный режим
+            resetGame();
+            hideMainMenu();
+            isGameRunning = true;
+            gameLoop();
         }
     });
 
-    fruits.forEach((fruit, index) => {
-        if (capybara.x < fruit.x + fruit.width &&
-            capybara.x + capybara.width > fruit.x &&
-            capybara.y < fruit.y + fruit.height &&
-            capybara.height + capybara.y > fruit.y) {
-            // Collect fruit
-            score += 10;
-            fruits.splice(index, 1);
+    // Start the game in challenge mode
+    document.getElementById('challengeModeBtn').addEventListener('click', () => {
+        if (!isGameRunning) {
+            isChallengeMode = true; // Режим испытаний
+            resetGame();
+            hideMainMenu();
+            isGameRunning = true;
+            gameLoop();
         }
     });
-}
 
-// Display score
-function drawScore() {
-    ctx.fillStyle = 'black';
-    ctx.font = '20px Arial';
-    ctx.fillText(`Score: ${score}`, 10, 30);
-}
+    // Reset game state
+    function resetGame() {
+        obstacles = [];
+        fruits = [];
+        score = 0;
+        gameSpeed = initialGameSpeed;
+        speedCapybar = initialSpeedCapybar;
+        capybara.x = canvas.width / 2 - 25;
+        capybara.y = canvas.height - 70;
+        isPaused = false;
+        isReversedControls = false; // Сбрасываем обратное управление
 
-// Increase game speed after every 100 points
-function increaseSpeed() {
-    if (score >= 100 && score < 110) {
-        gameSpeed = 4;
-        speedCapybar = 7;
-    }
-    if (score >= 200 && score < 210) {
-        gameSpeed = 5;
-        speedCapybar = 12;
-    }
-    if (score >= 300 && score < 310) {
-        gameSpeed = 6;
-        speedCapybar = 17;
-    }
-    if (score >= 400 && score < 410) {
-        gameSpeed = 7;
-        speedCapybar = 31;
-    }
-}
+        if (obstacleInterval) {
+            clearInterval(obstacleInterval);
+        }
+        if (fruitInterval) {
+            clearInterval(fruitInterval);
+        }
 
-// Update game state
-function update() {
-    if (keys['ArrowLeft'] && capybara.x > 0) {
-        capybara.x -= capybara.speed;
+        startNormalObstacleGeneration();
+        fruitInterval = setInterval(() => {
+            if (!isPaused && isGameRunning) {
+                generateFruits();
+            }
+        }, 3000);
     }
-    if (keys['ArrowRight'] && capybara.x < canvas.width - capybara.width) {
-        capybara.x += capybara.speed;
-    }
-    updateObstacles();
-    updateFruits();
-    checkCollisions();
-    increaseSpeed();
-}
 
-// Main game loop
-function gameLoop() {
-    if (!isPaused) {
+    // Show main menu
+    function showMainMenu() {
+        document.getElementById('mainMenu').style.display = 'block';
+        document.getElementById('gameCanvas').style.display = 'none';
+        document.getElementById('mobileControls').style.display = 'none';
+        document.getElementById('gameControls').style.display = 'none';
+        document.getElementById('pauseMenu').style.display = 'none';
+        isPaused = true;
+        isGameRunning = false;
+    }
+
+    // Hide main menu
+    function hideMainMenu() {
+        document.getElementById('mainMenu').style.display = 'none';
+        document.getElementById('gameCanvas').style.display = 'block';
+        document.getElementById('mobileControls').style.display = 'block';
+        document.getElementById('gameControls').style.display = 'block';
+        isPaused = false;
+    }
+
+    // Show pause menu
+    function showPauseMenu() {
+        document.getElementById('pauseMenu').style.display = 'block';
+    }
+
+    // Hide pause menu
+    function hidePauseMenu() {
+        document.getElementById('pauseMenu').style.display = 'none';
+    }
+
+    // Toggle pause state
+    function togglePause() {
+        isPaused = !isPaused;
+        if (isPaused) {
+            showPauseMenu();
+        } else {
+            hidePauseMenu();
+        }
+    }
+
+    // Update game state
+    function update() {
+        if (!isPaused) {
+            // Логика движения с учетом обратного управления
+            if (keys['ArrowLeft'] || isMovingLeft) {
+                if (isReversedControls) {
+                    // Обратное управление: движение вправо
+                    if (capybara.x < canvas.width - capybara.width) {
+                        capybara.x += fastSpeed;
+                    }
+                } else {
+                    // Нормальное управление: движение влево
+                    if (capybara.x > 0) {
+                        capybara.x -= fastSpeed;
+                    }
+                }
+            }
+
+            if (keys['ArrowRight'] || isMovingRight) {
+                if (isReversedControls) {
+                    // Обратное управление: движение влево
+                    if (capybara.x > 0) {
+                        capybara.x -= fastSpeed;
+                    }
+                } else {
+                    // Нормальное управление: движение вправо
+                    if (capybara.x < canvas.width - capybara.width) {
+                        capybara.x += fastSpeed;
+                    }
+                }
+            }
+
+            updateObstacles();
+            updateFruits();
+            checkCollisions();
+            increaseSpeed();
+        }
+    }
+
+    // Main game loop
+    function gameLoop() {
+        if (!isGameRunning) return;
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawCapybara();
-        drawObstacles();
-        drawFruits();
-        drawScore();
-        update();
+
+        if (!isPaused) {
+            drawCapybara();
+            drawObstacles();
+            drawFruits();
+            drawScore();
+            update();
+        }
+
+        requestAnimationFrame(gameLoop);
     }
-    requestAnimationFrame(gameLoop);
-}
 
-// Generate obstacles and fruits periodically
-setInterval(generateObstacles, 2000);
-setInterval(generateFruits, 3000);
+    // Mobile controls
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
 
-gameLoop();
+    leftBtn.addEventListener('touchstart', () => {
+        isMovingLeft = true;
+    });
+    leftBtn.addEventListener('touchend', () => {
+        isMovingLeft = false;
+    });
+
+    rightBtn.addEventListener('touchstart', () => {
+        isMovingRight = true;
+    });
+    rightBtn.addEventListener('touchend', () => {
+        isMovingRight = false;
+    });
+
+    pauseBtn.addEventListener('click', togglePause);
+
+    // Return to main menu and reload the game
+    document.getElementById('returnToMenuBtn').addEventListener('click', () => {
+        showMainMenu();
+    });
+
+    // Resume game from pause menu
+    document.getElementById('resumeGameBtn').addEventListener('click', () => {
+        togglePause();
+    });
+
+    // Event listeners for key presses (keyboard)
+    window.addEventListener('keydown', (e) => {
+        keys[e.code] = true;
+        if (e.code === 'Space') {
+            togglePause();
+        }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+        isMovingLeft = false;
+        isMovingRight = false;
+    });
+});
