@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация и авторизация</title>
+</head>
+<body>
+    <div id="auth">
+        <h1>Регистрация</h1>
+        <form id="registerForm">
+            <input type="text" id="regUsername" placeholder="Логин" required>
+            <input type="email" id="regEmail" placeholder="Email" required>
+            <input type="password" id="regPassword" placeholder="Пароль" required>
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+
+        <h1>Авторизация</h1>
+        <form id="loginForm">
+            <input type="text" id="loginUsername" placeholder="Логин" required>
+            <input type="password" id="loginPassword" placeholder="Пароль" required>
+            <button type="submit">Войти</button>
+        </form>
+    </div>
+
+    <div id="game" style="display: none;">
+        <h1>Добро пожаловать, <span id="username"></span>!</h1>
+        <!-- Ваш игровой интерфейс -->
+    </div>
+
+    <script src="auth.js"></script>
+</body>
+</html>

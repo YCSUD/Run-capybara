@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let obstacleInterval;
     let fruitInterval;
 
+    // Переменная для отслеживания последней сотни
+    let lastHundred = 0;
+
     // Функция для запуска обычного интервала
     function startNormalObstacleGeneration() {
         if (obstacleInterval) {
@@ -157,10 +160,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 15000); // 15 секунд
     }
 
-    // Increase game speed and activate reverse controls at 100 points
+    // Увеличение скорости игры и активация испытания каждые 100 очков
     function increaseSpeed() {
-        if (score === 100 && isChallengeMode) {
-            activateReverseControls(); // Активируем обратное управление
+        const currentHundred = Math.floor(score / 100); // Текущая сотня
+        if (currentHundred > lastHundred) { // Если перешли на новую сотню
+            gameSpeed += 2; // Увеличиваем скорость игры на 2
+            speedCapybar += 2; // Увеличиваем скорость капибары на 2
+            lastHundred = currentHundred; // Обновляем последнюю сотню
+
+            if (isChallengeMode) {
+                activateReverseControls(); // Активируем обратное управление в режиме испытаний
+            }
         }
     }
 
@@ -197,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         capybara.y = canvas.height - 70;
         isPaused = false;
         isReversedControls = false; // Сбрасываем обратное управление
+        lastHundred = 0; // Сбрасываем последнюю сотню
 
         if (obstacleInterval) {
             clearInterval(obstacleInterval);
